@@ -163,6 +163,77 @@ const getResourceById = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+// @desc    Get all resources (admin)
+// @route   GET /api/admin/resources
+// @access  Admin only
+const getAllResourcesAdmin = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let query = {};
+    if (status) {
+      query.status = status;
+    }
+
+    const resources = await Resource.find(query)
+      .populate('donor', 'name email phone')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, count: resources.length, resources });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Approve a resource
+// @route   PUT /api/admin/resources/:id/approve
+// @access  Admin only
+const approveResource = async (req, res) => {
+  try {
+    const resource = await Resource.findById(req.params.id);
+
+    if (!resource) {
+      return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    if (resource.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Resource is already ${resource.status}` });
+    }
+
+    resource.status = 'approved';
+    resource.adminNote = req.body.adminNote || 'Approved by admin';
+    await resource.save();
+
+    res.status(200).json({ success: true, message: 'Resource approved successfully', resource });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Reject a resource
+// @route   PUT /api/admin/resources/:id/reject
+// @access  Admin only
+const rejectResource = async (req, res) => {
+  try {
+    const resource = await Resource.findById(req.params.id);
+
+    if (!resource) {
+      return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    if (resource.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Resource is already ${resource.status}` });
+    }
+
+    resource.status = 'rejected';
+    resource.adminNote = req.body.adminNote || 'Rejected by admin';
+    await resource.save();
+
+    res.status(200).json({ success: true, message: 'Resource rejected successfully', resource });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
 module.exports = {
   createResource,
   getMyResources,
@@ -170,4 +241,7 @@ module.exports = {
   deleteResource,
   getAllResources,
   getResourceById,
+  getAllResourcesAdmin,
+  approveResource,
+  rejectResource,
 };
