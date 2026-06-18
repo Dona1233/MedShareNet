@@ -12,12 +12,14 @@ const authRoutes = require("./routes/authRoutes");
 const testRoutes = require("./routes/testRoutes");
 const userRoutes = require('./routes/userRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
+const requestRoutes = require('./routes/requestRoutes');
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/resources", resourceRoutes);
+app.use("/api/requests", requestRoutes);
 console.log("MONGO_URI:", process.env.MONGO_URI);
 
 mongoose.connect(process.env.MONGO_URI, {
