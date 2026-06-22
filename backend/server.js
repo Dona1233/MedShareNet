@@ -2,34 +2,42 @@ const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-require("dotenv").config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
-const authRoutes = require("./routes/authRoutes");
-const testRoutes = require("./routes/testRoutes");
-const userRoutes = require('./routes/userRoutes');
-const resourceRoutes = require('./routes/resourceRoutes');
-const requestRoutes = require('./routes/requestRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+
 app.use(cors());
 app.use(express.json());
-app.use("/api/auth", authRoutes);
-app.use('/api/users', userRoutes);
-app.use("/api/test", testRoutes);
-app.use("/api/resources", resourceRoutes);
-app.use("/api/requests", requestRoutes);
-app.use("/api/admin", adminRoutes);
-console.log("MONGO_URI:", process.env.MONGO_URI);
+
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/resources', require('./routes/resourceRoutes'));
+app.use('/api/requests', require('./routes/requestRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/stats', require('./routes/statsRoutes'));
+
+// Health check
+app.get('/', (req, res) => res.json({ message: 'MedShareNet API Running' }));
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ success: false, message: 'Something went wrong', error: err.message });
+});
 
 mongoose.connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 30000,
+  serverSelectionTimeoutMS: 30000,
 })
-.then(() => console.log("MongoDB Connected"))
+.then(() => console.log('MongoDB Connected'))
 .catch(err => console.log(err));
 
-app.get("/", (req, res) => res.send("MedShareNet API Running"));
-
-app.listen(5000, () => console.log("Server running on port 5000"));
+app.listen(5000, () => console.log('Server running on port 5000'));

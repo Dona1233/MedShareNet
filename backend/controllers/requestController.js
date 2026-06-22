@@ -142,11 +142,108 @@ const getAllRequests = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+// @desc    Approve a request
+// @route   PUT /api/admin/requests/:id/approve
+// @access  Admin only
+const approveRequest = async (req, res) => {
+  try {
+    const request = await Request.findById(req.params.id)
+      .populate('resource')
+      .populate('beneficiary', 'name email');
 
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+    }
+
+    // Check resource still has enough quantity
+    if (request.quantityRequested > request.resource.quantity) {
+      return res.status(400).json({
+        success: false,
+        message: `Not enough quantity. Only ${request.resource.quantity} unit(s) left`,
+      });
+    }
+
+    // Approve request
+    request.status = 'approved';
+    request.adminNote = req.body.adminNote || 'Approved by admin';
+    await request.save();
+
+    // Reduce resource quantity
+    const newQuantity = request.resource.quantity - request.quantityRequested;
+
+    if (newQuantity === 0) {
+      // Mark resource as claimed if fully used
+      await Resource.findByIdAndUpdate(request.resource._id, {
+        quantity: 0,
+        status: 'claimed',
+      });
+    } else {
+      await Resource.findByIdAndUpdate(request.resource._id, {
+        quantity: newQuantity,
+      });
+    }
+
+    res.status(200).json({ success: true, message: 'Request approved successfully', request });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Reject a request
+// @route   PUT /api/admin/requests/:id/reject
+// @access  Admin only
+const rejectRequest = async (req, res) => {
+  try {
+    const request = await Request.findById(req.params.id)
+      .populate('beneficiary', 'name email');
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+    }
+
+    request.status = 'rejected';
+    request.adminNote = req.body.adminNote || 'Rejected by admin';
+    await request.save();
+
+    res.status(200).json({ success: true, message: 'Request rejected successfully', request });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Get request status (for beneficiary tracking)
+// @route   GET /api/requests/:id/status
+// @access  Private
+const getRequestStatus = async (req, res) => {
+  try {
+    const request = await Request.findById(req.params.id)
+      .populate('resource', 'title category')
+      .select('status adminNote quantityRequested deliveryAddress createdAt updatedAt');
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+
+    res.status(200).json({ success: true, request });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
 module.exports = {
   createRequest,
   getMyRequests,
   getRequestById,
   cancelRequest,
   getAllRequests,
+  approveRequest,
+  rejectRequest,
+  getRequestStatus,
 };
