@@ -53,6 +53,7 @@ const MyRequests = () => {
 
       {requests.length === 0 ? (
         <Card className="text-center py-12">
+          <div className="text-5xl mb-4">🔍</div>
           <p className="text-gray-400 text-lg mb-4">No requests yet</p>
           <Link to="/beneficiary/browse">
             <Button>Browse available resources</Button>
@@ -77,17 +78,52 @@ const MyRequests = () => {
                   <div className="p-3 bg-gray-50 rounded-lg mb-3">
                     <p className="text-sm text-gray-600"><strong>Your message:</strong> {r.message}</p>
                   </div>
+
+                  {/* Admin note */}
                   {r.adminNote && (
-                    <div className={`p-3 rounded-lg ${r.status === 'approved' ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <div className={`p-3 rounded-lg mb-3 ${r.status === 'approved' ? 'bg-green-50' : 'bg-red-50'}`}>
                       <p className="text-sm"><strong>Admin Note:</strong> {r.adminNote}</p>
                     </div>
                   )}
+
+                  {/* Donor contact info — shown only when approved */}
+                  {r.status === 'approved' && (
+                    <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm font-semibold text-green-800 mb-3">
+                        ✅ Your request is approved! Contact the donor to arrange pickup/delivery:
+                      </p>
+                      <div className="flex flex-wrap gap-4 text-sm text-green-700">
+                        {r.resource?.location && (
+                          <span>📍 <strong>Pickup Location:</strong> {r.resource.location}</span>
+                        )}
+                        {r.resource?.donor?.name && (
+                          <span>👤 <strong>Donor:</strong> {r.resource.donor.name}</span>
+                        )}
+                        {r.resource?.donor?.phone && (
+                          <span>📞 <strong>Phone:</strong> {r.resource.donor.phone}</span>
+                        )}
+                        {r.resource?.donor?.email && (
+                          <span>📧 <strong>Email:</strong> {r.resource.donor.email}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rejected state */}
+                  {r.status === 'rejected' && (
+                    <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm font-semibold text-red-800">
+                        ❌ This request was rejected. You can browse other available resources.
+                      </p>
+                    </div>
+                  )}
                 </div>
+
                 {r.status === 'pending' && (
                   <Button
                     variant="danger"
                     onClick={() => handleCancel(r._id)}
-                    className="ml-4 text-sm"
+                    className="ml-4 text-sm flex-shrink-0"
                   >
                     Cancel
                   </Button>

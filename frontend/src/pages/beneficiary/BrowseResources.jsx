@@ -154,26 +154,25 @@ const BrowseResources = () => {
             <div className="grid md:grid-cols-2 gap-4">
               {resources.map((r) => (
                 <Card key={r._id}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">{r.title}</h3>
-                      <p className="text-sm text-gray-500 capitalize">{r.category}</p>
+                    <div className="flex items-start justify-between mb-3">
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-800">{r.title}</h3>
+                            <p className="text-sm text-gray-500 capitalize">{r.category}</p>
+                        </div>
+                        <Badge status={r.condition} />
                     </div>
-                    <Badge status={r.condition} />
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">{r.description}</p>
-                  <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
-                    <span>🔢 Qty: {r.quantity}</span>
-                    <span>📍 {r.location}</span>
-                    <span>👤 {r.donor?.name}</span>
-                  </div>
-                  <Button
-                    className="w-full"
-                    onClick={() => setSelectedResource(r)}
-                  >
-                    Request This Resource
-                  </Button>
+                    <p className="text-sm text-gray-600 mb-4">{r.description}</p>
+                    <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
+                        <span>🔢 Qty: <strong>{r.quantity}</strong></span>
+                        <span>📍 <strong>{r.location}</strong></span>
+                        <span>👤 Donor: <strong>{r.donor?.name}</strong></span>
+                        {r.donor?.phone && <span>📞 <strong>{r.donor.phone}</strong></span>}
+                    </div>
+                    <Button className="w-full" onClick={() => setSelectedResource(r)}>
+                        Request This Resource
+                    </Button>
                 </Card>
+
               ))}
             </div>
           )}

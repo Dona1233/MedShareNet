@@ -1,3 +1,4 @@
+import Landing from '../pages/Landing';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Login from '../pages/auth/Login';
@@ -28,6 +29,7 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={!user ? <Landing /> : <Navigate to={`/${user.role}`} />} />
         <Route path="/login" element={!user ? <Login /> : <Navigate to={`/${user.role}`} />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to={`/${user.role}`} />} />
 
@@ -43,7 +45,7 @@ const AppRoutes = () => {
         <Route path="/admin/resources" element={<ProtectedRoute allowedRoles={['admin']}><ManageResources /></ProtectedRoute>} />
         <Route path="/admin/requests" element={<ProtectedRoute allowedRoles={['admin']}><ManageRequests /></ProtectedRoute>} />
 
-        <Route path="/" element={<Navigate to="/login" />} />
+        
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

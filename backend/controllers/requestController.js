@@ -58,13 +58,17 @@ const createRequest = async (req, res) => {
   }
 };
 
-// @desc    Get my requests
-// @route   GET /api/requests/my
-// @access  Beneficiary only
 const getMyRequests = async (req, res) => {
   try {
     const requests = await Request.find({ beneficiary: req.user._id })
-      .populate('resource', 'title category condition location images')
+      .populate({
+        path: 'resource',
+        select: 'title category condition location images donor',
+        populate: {
+          path: 'donor',
+          select: 'name email phone',
+        },
+      })
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: requests.length, requests });
@@ -72,7 +76,6 @@ const getMyRequests = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
-
 // @desc    Get single request
 // @route   GET /api/requests/:id
 // @access  Private
