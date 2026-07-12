@@ -6,23 +6,51 @@ const Resource = require('../models/Resource');
 // @access  Beneficiary only
 const createRequest = async (req, res) => {
   try {
-    const { resourceId, message, quantityRequested, deliveryAddress } = req.body;
+    const {
+      resourceId,
+      message,
+      quantityRequested,
+      deliveryAddress,
+      disclaimerAccepted,
+    } = req.body;
 
     if (!resourceId || !message || !quantityRequested || !deliveryAddress) {
-      return res.status(400).json({ success: false, message: 'Please fill all required fields' });
+      return res.status(400).json({
+        success: false,
+        message: 'Please fill all required fields',
+      });
     }
 
-    // Check resource exists and is approved
+    if (quantityRequested <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity requested must be greater than 0',
+      });
+    }
+
+    if (!disclaimerAccepted) {
+      return res.status(400).json({
+        success: false,
+        message: 'You must accept the medical disclaimer to proceed',
+      });
+    }
+
     const resource = await Resource.findById(resourceId);
+
     if (!resource) {
-      return res.status(404).json({ success: false, message: 'Resource not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Resource not found',
+      });
     }
 
     if (resource.status !== 'approved') {
-      return res.status(400).json({ success: false, message: 'Resource is not available for request' });
+      return res.status(400).json({
+        success: false,
+        message: 'Resource is not available for request',
+      });
     }
 
-    // Check quantity
     if (quantityRequested > resource.quantity) {
       return res.status(400).json({
         success: false,
@@ -30,7 +58,6 @@ const createRequest = async (req, res) => {
       });
     }
 
-    // Check if beneficiary already requested this resource
     const alreadyRequested = await Request.findOne({
       resource: resourceId,
       beneficiary: req.user._id,
@@ -38,7 +65,10 @@ const createRequest = async (req, res) => {
     });
 
     if (alreadyRequested) {
-      return res.status(400).json({ success: false, message: 'You have already requested this resource' });
+      return res.status(400).json({
+        success: false,
+        message: 'You have already requested this resource',
+      });
     }
 
     const request = await Request.create({
@@ -47,20 +77,33 @@ const createRequest = async (req, res) => {
       message,
       quantityRequested,
       deliveryAddress,
+      disclaimerAccepted: true,
     });
 
     await request.populate('resource', 'title category condition');
     await request.populate('beneficiary', 'name email');
 
-    res.status(201).json({ success: true, request });
+    res.status(201).json({
+      success: true,
+      request,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
 
+// @desc    Get my requests
+// @route   GET /api/requests/my
+// @access  Beneficiary only
 const getMyRequests = async (req, res) => {
   try {
-    const requests = await Request.find({ beneficiary: req.user._id })
+    const requests = await Request.find({
+      beneficiary: req.user._id,
+    })
       .populate({
         path: 'resource',
         select: 'title category condition location images donor',
@@ -71,11 +114,20 @@ const getMyRequests = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ success: true, count: requests.length, requests });
+    res.status(200).json({
+      success: true,
+      count: requests.length,
+      requests,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
+
 // @desc    Get single request
 // @route   GET /api/requests/:id
 // @access  Private
@@ -86,20 +138,32 @@ const getRequestById = async (req, res) => {
       .populate('beneficiary', 'name email phone');
 
     if (!request) {
-      return res.status(404).json({ success: false, message: 'Request not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Request not found',
+      });
     }
 
-    // Only beneficiary who made request or admin can view
     if (
       request.beneficiary._id.toString() !== req.user._id.toString() &&
       req.user.role !== 'admin'
     ) {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized',
+      });
     }
 
-    res.status(200).json({ success: true, request });
+    res.status(200).json({
+      success: true,
+      request,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
 
@@ -111,27 +175,45 @@ const cancelRequest = async (req, res) => {
     const request = await Request.findById(req.params.id);
 
     if (!request) {
-      return res.status(404).json({ success: false, message: 'Request not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Request not found',
+      });
     }
 
-    if (request.beneficiary.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Not authorized to cancel this request' });
+    if (
+      request.beneficiary.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to cancel this request',
+      });
     }
 
     if (request.status !== 'pending') {
-      return res.status(400).json({ success: false, message: `Cannot cancel a request that is already ${request.status}` });
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel a request that is already ${request.status}`,
+      });
     }
 
     await request.deleteOne();
 
-    res.status(200).json({ success: true, message: 'Request cancelled successfully' });
+    res.status(200).json({
+      success: true,
+      message: 'Request cancelled successfully',
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
 
-// @desc    Get all requests (admin)
-// @route   GET /api/requests
+// @desc    Get all requests
+// @route   GET /api/admin/requests
 // @access  Admin only
 const getAllRequests = async (req, res) => {
   try {
@@ -140,12 +222,21 @@ const getAllRequests = async (req, res) => {
       .populate('beneficiary', 'name email phone')
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ success: true, count: requests.length, requests });
+    res.status(200).json({
+      success: true,
+      count: requests.length,
+      requests,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
-// @desc    Approve a request
+
+// @desc    Approve request
 // @route   PUT /api/admin/requests/:id/approve
 // @access  Admin only
 const approveRequest = async (req, res) => {
@@ -155,14 +246,19 @@ const approveRequest = async (req, res) => {
       .populate('beneficiary', 'name email');
 
     if (!request) {
-      return res.status(404).json({ success: false, message: 'Request not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Request not found',
+      });
     }
 
     if (request.status !== 'pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+      return res.status(400).json({
+        success: false,
+        message: `Request is already ${request.status}`,
+      });
     }
 
-    // Check resource still has enough quantity
     if (request.quantityRequested > request.resource.quantity) {
       return res.status(400).json({
         success: false,
@@ -170,33 +266,47 @@ const approveRequest = async (req, res) => {
       });
     }
 
-    // Approve request
     request.status = 'approved';
-    request.adminNote = req.body.adminNote || 'Approved by admin';
+    request.adminNote =
+      req.body.adminNote || 'Approved by admin';
+
     await request.save();
 
-    // Reduce resource quantity
-    const newQuantity = request.resource.quantity - request.quantityRequested;
+    const newQuantity =
+      request.resource.quantity - request.quantityRequested;
 
     if (newQuantity === 0) {
-      // Mark resource as claimed if fully used
-      await Resource.findByIdAndUpdate(request.resource._id, {
-        quantity: 0,
-        status: 'claimed',
-      });
+      await Resource.findByIdAndUpdate(
+        request.resource._id,
+        {
+          quantity: 0,
+          status: 'claimed',
+        }
+      );
     } else {
-      await Resource.findByIdAndUpdate(request.resource._id, {
-        quantity: newQuantity,
-      });
+      await Resource.findByIdAndUpdate(
+        request.resource._id,
+        {
+          quantity: newQuantity,
+        }
+      );
     }
 
-    res.status(200).json({ success: true, message: 'Request approved successfully', request });
+    res.status(200).json({
+      success: true,
+      message: 'Request approved successfully',
+      request,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
 
-// @desc    Reject a request
+// @desc    Reject request
 // @route   PUT /api/admin/requests/:id/reject
 // @access  Admin only
 const rejectRequest = async (req, res) => {
@@ -205,41 +315,82 @@ const rejectRequest = async (req, res) => {
       .populate('beneficiary', 'name email');
 
     if (!request) {
-      return res.status(404).json({ success: false, message: 'Request not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Request not found',
+      });
     }
 
     if (request.status !== 'pending') {
-      return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+      return res.status(400).json({
+        success: false,
+        message: `Request is already ${request.status}`,
+      });
     }
 
     request.status = 'rejected';
-    request.adminNote = req.body.adminNote || 'Rejected by admin';
+    request.adminNote =
+      req.body.adminNote || 'Rejected by admin';
+
     await request.save();
 
-    res.status(200).json({ success: true, message: 'Request rejected successfully', request });
+    res.status(200).json({
+      success: true,
+      message: 'Request rejected successfully',
+      request,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
 
-// @desc    Get request status (for beneficiary tracking)
+// @desc    Get request status
 // @route   GET /api/requests/:id/status
 // @access  Private
 const getRequestStatus = async (req, res) => {
   try {
     const request = await Request.findById(req.params.id)
       .populate('resource', 'title category')
-      .select('status adminNote quantityRequested deliveryAddress createdAt updatedAt');
+      .populate('beneficiary', 'name email')
+      .select(
+        'status adminNote quantityRequested deliveryAddress createdAt updatedAt beneficiary resource'
+      );
 
     if (!request) {
-      return res.status(404).json({ success: false, message: 'Request not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Request not found',
+      });
     }
 
-    res.status(200).json({ success: true, request });
+    const isOwner =
+      request.beneficiary._id.toString() ===
+      req.user._id.toString();
+
+    if (!isOwner && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      request,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
+
 module.exports = {
   createRequest,
   getMyRequests,

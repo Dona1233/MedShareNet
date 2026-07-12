@@ -19,6 +19,7 @@ app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/requests', require('./routes/requestRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
 
 // Health check
 app.get('/', (req, res) => res.json({ message: 'MedShareNet API Running' }));

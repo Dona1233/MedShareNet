@@ -11,12 +11,14 @@ const Navbar = () => {
     donor: 'bg-green-100 text-green-800',
     beneficiary: 'bg-blue-100 text-blue-800',
     admin: 'bg-red-100 text-red-800',
+    institution: 'bg-purple-100 text-purple-800',
   };
 
   const dashboardLink = {
     donor: '/donor',
     beneficiary: '/beneficiary',
     admin: '/admin',
+    institution: '/beneficiary',
   };
 
   const navLinks = {
@@ -34,6 +36,13 @@ const Navbar = () => {
       { label: 'Dashboard', href: '/admin' },
       { label: 'Manage Resources', href: '/admin/resources' },
       { label: 'Manage Requests', href: '/admin/requests' },
+    ],
+    institution: [
+      { label: 'Dashboard', href: '/beneficiary' },
+      { label: 'Donate Resource', href: '/donor/add-resource' },
+      { label: 'My Donations', href: '/donor/my-donations' },
+      { label: 'Browse Resources', href: '/beneficiary/browse' },
+      { label: 'My Requests', href: '/beneficiary/my-requests' },
     ],
   };
 

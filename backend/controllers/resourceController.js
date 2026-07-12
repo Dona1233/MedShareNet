@@ -103,6 +103,7 @@ const deleteResource = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+
 // @desc    Get all approved resources (with search & filter)
 // @route   GET /api/resources
 // @access  Private (any logged in user)
@@ -136,8 +137,9 @@ const getAllResources = async (req, res) => {
       query.location = { $regex: location, $options: 'i' };
     }
 
+    // Updated with your customized population fields including verifiedBadge
     const resources = await Resource.find(query)
-      .populate('donor', 'name email phone')
+      .populate('donor', 'name email phone verifiedBadge')
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: resources.length, resources });
@@ -163,6 +165,7 @@ const getResourceById = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+
 // @desc    Get all resources (admin)
 // @route   GET /api/admin/resources
 // @access  Admin only
@@ -234,6 +237,7 @@ const rejectResource = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+
 module.exports = {
   createResource,
   getMyResources,

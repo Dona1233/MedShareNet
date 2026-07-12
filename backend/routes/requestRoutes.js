@@ -10,11 +10,10 @@ const {
 } = require('../controllers/requestController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Beneficiary routes
-router.post('/', protect, authorize('beneficiary'), createRequest);
-router.get('/my', protect, authorize('beneficiary'), getMyRequests);
-router.delete('/:id', protect, authorize('beneficiary'), cancelRequest);
-
+// In requestRoutes.js update this line:
+router.post('/', protect, authorize('beneficiary', 'institution'), createRequest);
+router.get('/my', protect, authorize('beneficiary', 'institution'), getMyRequests);
+router.delete('/:id', protect, authorize('beneficiary', 'institution'), cancelRequest);
 // Status tracking — any logged in user
 router.get('/:id/status', protect, getRequestStatus);
 

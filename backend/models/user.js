@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Name is required'],
       trim: true,
     },
+
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -16,31 +17,64 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
     },
+
     password: {
       type: String,
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false, // never returned in queries by default
+      select: false,
     },
+
     role: {
       type: String,
-      enum: ['donor', 'beneficiary', 'admin'],
+      enum: ['donor', 'beneficiary', 'admin', 'institution'],
       default: 'beneficiary',
     },
+
     phone: {
       type: String,
       trim: true,
     },
+
     address: {
       type: String,
       trim: true,
     },
+
+    // Institution-specific fields
+    institutionName: {
+      type: String,
+      trim: true,
+    },
+
+    institutionType: {
+      type: String,
+      enum: ['hospital', 'ngo', 'clinic', 'charity', 'other'],
+    },
+
+    registrationCertificate: {
+      type: String, // Cloudinary URL
+      trim: true,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    verifiedBadge: {
+      type: Boolean,
+      default: false,
+    },
+
     isActive: {
       type: Boolean,
       default: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 // Hash password before saving
@@ -51,7 +85,7 @@ userSchema.pre('save', async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Method to compare passwords
+// Compare entered password with hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

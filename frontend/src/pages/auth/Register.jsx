@@ -16,7 +16,10 @@ const Register = () => {
     role: 'beneficiary',
     phone: '',
     address: '',
+    institutionName: '',
+    institutionType: '',
   });
+  const [certificateFile, setCertificateFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -30,27 +33,56 @@ const Register = () => {
       toast.error('Please fill all required fields');
       return;
     }
-
     if (form.password !== form.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-
     if (form.password.length < 6) {
       toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (form.role === 'institution' && !form.institutionName) {
+      toast.error('Please enter your institution name');
+      return;
+    }
+    if (form.role === 'institution' && !form.institutionType) {
+      toast.error('Please select your institution type');
       return;
     }
 
     setLoading(true);
     try {
+      // Upload certificate if institution
+      let certificateUrl = '';
+      if (form.role === 'institution' && certificateFile) {
+        const formData = new FormData();
+        formData.append('images', certificateFile);
+        const uploadRes = await api.post('/upload', formData);
+        certificateUrl = uploadRes.data.urls[0];
+      }
+
       const { confirmPassword, ...submitData } = form;
+      if (certificateUrl) submitData.registrationCertificate = certificateUrl;
+
       const res = await api.post('/auth/register', submitData);
       login(res.data.user, res.data.token);
-      toast.success(`Welcome to MedShareNet, ${res.data.user.name}!`);
+
       const role = res.data.user.role;
-      if (role === 'donor') navigate('/donor');
-      else if (role === 'beneficiary') navigate('/beneficiary');
-      else if (role === 'admin') navigate('/admin');
+
+      if (role === 'institution') {
+        toast.success(`Welcome to MedShareNet, ${res.data.user.name}!`);
+        toast('Your institution account is pending admin verification. You can browse and request resources in the meantime.', {
+          icon: '🏛️',
+          duration: 5000,
+        });
+        // Delay navigate so toasts render before unmount
+        setTimeout(() => navigate('/beneficiary'), 1500);
+      } else {
+        toast.success(`Welcome to MedShareNet, ${res.data.user.name}!`);
+        if (role === 'donor') navigate('/donor');
+        else if (role === 'beneficiary') navigate('/beneficiary');
+        else if (role === 'admin') navigate('/admin');
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
@@ -94,23 +126,81 @@ const Register = () => {
             {/* Role selector */}
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">I am a *</label>
-              <div className="grid grid-cols-2 gap-2">
-                {['donor', 'beneficiary'].map((r) => (
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'donor', label: '🤝 Donor', desc: 'I want to donate' },
+                  { value: 'beneficiary', label: '🙏 Beneficiary', desc: 'I need resources' },
+                  { value: 'institution', label: '🏛️ Institution', desc: 'NGO / Hospital' },
+                ].map((r) => (
                   <button
-                    key={r}
+                    key={r.value}
                     type="button"
-                    onClick={() => setForm({ ...form, role: r })}
-                    className={`py-2 px-4 rounded-lg border text-sm font-medium transition duration-200 capitalize
-                      ${form.role === r
+                    onClick={() => setForm({ ...form, role: r.value })}
+                    className={`py-3 px-2 rounded-lg border text-sm font-medium transition duration-200 text-center
+                      ${form.role === r.value
                         ? 'bg-primary-600 text-white border-primary-600'
                         : 'bg-white text-gray-600 border-gray-300 hover:border-primary-400'
                       }`}
                   >
-                    {r === 'donor' ? '🤝 Donor' : '🙏 Beneficiary'}
+                    <div>{r.label}</div>
+                    <div className={`text-xs mt-1 ${form.role === r.value ? 'text-primary-100' : 'text-gray-400'}`}>
+                      {r.desc}
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Institution fields */}
+            {form.role === 'institution' && (
+              <>
+                <Input
+                  label="Institution Name *"
+                  name="institutionName"
+                  value={form.institutionName}
+                  onChange={handleChange}
+                  placeholder="e.g. Kerala Cancer Society"
+                  required
+                />
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-gray-700">Institution Type *</label>
+                  <select
+                    name="institutionType"
+                    value={form.institutionType}
+                    onChange={handleChange}
+                    required
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">Select type</option>
+                    <option value="hospital">Hospital</option>
+                    <option value="ngo">NGO</option>
+                    <option value="clinic">Clinic</option>
+                    <option value="charity">Charity</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-gray-700">
+                    Registration Certificate (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => setCertificateFile(e.target.files[0])}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600"
+                  />
+                  <span className="text-xs text-gray-400">
+                    Upload your institution's registration certificate (image or PDF)
+                  </span>
+                </div>
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-700">
+                    🏛️ Institution accounts require admin verification before receiving a verified badge.
+                    You can still browse and request resources while pending verification.
+                  </p>
+                </div>
+              </>
+            )}
 
             <Input
               label="Password *"

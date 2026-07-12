@@ -13,6 +13,7 @@ const ManageResources = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState(null);
+  const [expandedImage, setExpandedImage] = useState(null);
 
   const fetchResources = async () => {
     setLoading(true);
@@ -45,7 +46,7 @@ const ManageResources = () => {
 
   const handleReject = async (id) => {
     const note = window.prompt('Reason for rejection (optional):');
-    if (note === null) return; // cancelled
+    if (note === null) return;
     setActionLoading(id + 'reject');
     try {
       await api.put(`/admin/resources/${id}/reject`, { adminNote: note || 'Does not meet requirements.' });
@@ -101,6 +102,22 @@ const ManageResources = () => {
                         <Badge status={r.status} />
                       </div>
                       <p className="text-gray-500 text-sm mb-3">{r.description}</p>
+
+                      {/* Images — click to expand */}
+                      {r.images && r.images.length > 0 && (
+                        <div className="flex gap-2 mb-3 overflow-x-auto">
+                          {r.images.map((img, i) => (
+                            <img
+                              key={i}
+                              src={img}
+                              alt={`resource-${i}`}
+                              onClick={() => setExpandedImage(img)}
+                              className="w-24 h-24 object-cover rounded-lg border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-80 hover:scale-105 transition"
+                            />
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <span>📦 <strong>Category:</strong> {r.category}</span>
                         <span>✅ <strong>Condition:</strong> {r.condition}</span>
@@ -109,12 +126,14 @@ const ManageResources = () => {
                         <span>👤 <strong>Donor:</strong> {r.donor?.name} ({r.donor?.email})</span>
                         <span>📅 <strong>Date:</strong> {new Date(r.createdAt).toLocaleDateString()}</span>
                       </div>
+
                       {r.adminNote && (
                         <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                           <p className="text-sm text-gray-600"><strong>Admin Note:</strong> {r.adminNote}</p>
                         </div>
                       )}
                     </div>
+
                     {r.status === 'pending' && (
                       <div className="flex gap-2 ml-4 flex-shrink-0">
                         <Button
@@ -142,6 +161,30 @@ const ManageResources = () => {
           )}
         </>
       )}
+
+      {/* Full screen image viewer */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+          onClick={() => setExpandedImage(null)}
+        >
+          <div className="relative max-w-3xl w-full">
+            <img
+              src={expandedImage}
+              alt="expanded"
+              className="w-full max-h-screen object-contain rounded-lg"
+            />
+            <button
+              onClick={() => setExpandedImage(null)}
+              className="absolute top-2 right-2 bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-gray-100"
+            >
+              ✕
+            </button>
+            <p className="text-white text-center text-xs mt-2">Click anywhere to close</p>
+          </div>
+        </div>
+      )}
+
     </Layout>
   );
 };

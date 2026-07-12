@@ -13,7 +13,18 @@ const generateToken = (id) => {
 // Register User
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, address } = req.body;
+    // UPDATED: Destructured institution specific fields sent by Register.jsx
+    const { 
+      name, 
+      email, 
+      password, 
+      role, 
+      phone, 
+      address, 
+      institutionName, 
+      institutionType, 
+      registrationCertificate 
+    } = req.body;
 
     // Validation
     if (!name || !email || !password) {
@@ -41,13 +52,17 @@ const register = async (req, res) => {
     }
 
     // Create user
+    // UPDATED: Added institution fields to the User initialization map
     const user = await User.create({
       name,
       email,
       password,
       role: role || 'beneficiary',
       phone,
-      address
+      address,
+      institutionName: role === 'institution' ? institutionName : undefined,
+      institutionType: role === 'institution' ? institutionType : undefined,
+      registrationCertificate: role === 'institution' ? registrationCertificate : undefined
     });
 
     // Generate token
@@ -63,6 +78,9 @@ const register = async (req, res) => {
         role: user.role,
         phone: user.phone,
         address: user.address,
+        institutionName: user.institutionName,
+        institutionType: user.institutionType,
+        registrationCertificate: user.registrationCertificate,
         createdAt: user.createdAt
       }
     });
@@ -127,6 +145,8 @@ const login = async (req, res) => {
         role: user.role,
         phone: user.phone,
         address: user.address,
+        institutionName: user.institutionName,
+        institutionType: user.institutionType,
         createdAt: user.createdAt
       }
     });
@@ -163,8 +183,25 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = {
-  register,
-  login,
-  getMe
+// @desc    Verify institution (admin only)
+// @route   PUT /api/auth/verify-institution/:id
+// @access  Admin only
+const verifyInstitution = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (user.role !== 'institution') {
+      return res.status(400).json({ success: false, message: 'User is not an institution' });
+    }
+    user.isVerified = true;
+    user.verifiedBadge = true;
+    await user.save();
+    res.status(200).json({ success: true, message: 'Institution verified successfully', user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
 };
+
+module.exports = { register, login, getMe, verifyInstitution };

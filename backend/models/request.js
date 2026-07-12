@@ -22,6 +22,11 @@ const requestSchema = new mongoose.Schema(
       required: [true, 'Please specify quantity needed'],
       min: [1, 'Quantity must be at least 1'],
     },
+    disclaimerAccepted: {
+      type: Boolean,
+      required: [true, 'Disclaimer must be accepted'],
+      default: false,
+    },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],

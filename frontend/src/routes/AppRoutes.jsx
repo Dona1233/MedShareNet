@@ -18,7 +18,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
   if (!user) return <Navigate to="/login" />;
-  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/login" />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to={`/${user.role}`} />;
   return children;
 };
 
@@ -29,23 +29,28 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={!user ? <Landing /> : <Navigate to={`/${user.role}`} />} />
-        <Route path="/login" element={!user ? <Login /> : <Navigate to={`/${user.role}`} />} />
-        <Route path="/register" element={!user ? <Register /> : <Navigate to={`/${user.role}`} />} />
+        <Route path="/" element={!user ? <Landing /> : <Navigate to={user.role === 'institution' ? '/beneficiary' : `/${user.role}`} />} />
+        <Route path="/login" element={!user ? <Login /> : <Navigate to={user.role === 'institution' ? '/beneficiary' : `/${user.role}`} />} />
+        <Route path="/register" element={!user ? <Register /> : <Navigate to={user.role === 'institution' ? '/beneficiary' : `/${user.role}`} />} />
 
-        <Route path="/donor" element={<ProtectedRoute allowedRoles={['donor']}><DonorDashboard /></ProtectedRoute>} />
-        <Route path="/donor/add-resource" element={<ProtectedRoute allowedRoles={['donor']}><AddResource /></ProtectedRoute>} />
-        <Route path="/donor/my-donations" element={<ProtectedRoute allowedRoles={['donor']}><MyDonations /></ProtectedRoute>} />
+        {/* Donor Routes — institution can also donate */}
+        <Route path="/donor" element={<ProtectedRoute allowedRoles={['donor', 'institution']}><DonorDashboard /></ProtectedRoute>} />
+        <Route path="/donor/add-resource" element={<ProtectedRoute allowedRoles={['donor', 'institution']}><AddResource /></ProtectedRoute>} />
+        <Route path="/donor/my-donations" element={<ProtectedRoute allowedRoles={['donor', 'institution']}><MyDonations /></ProtectedRoute>} />
 
-        <Route path="/beneficiary" element={<ProtectedRoute allowedRoles={['beneficiary']}><BeneficiaryDashboard /></ProtectedRoute>} />
-        <Route path="/beneficiary/browse" element={<ProtectedRoute allowedRoles={['beneficiary']}><BrowseResources /></ProtectedRoute>} />
-        <Route path="/beneficiary/my-requests" element={<ProtectedRoute allowedRoles={['beneficiary']}><MyRequests /></ProtectedRoute>} />
+        {/* Beneficiary & Institution Routes */}
+        <Route path="/beneficiary" element={<ProtectedRoute allowedRoles={['beneficiary', 'institution']}><BeneficiaryDashboard /></ProtectedRoute>} />
+        <Route path="/beneficiary/browse" element={<ProtectedRoute allowedRoles={['beneficiary', 'institution']}><BrowseResources /></ProtectedRoute>} />
+        <Route path="/beneficiary/my-requests" element={<ProtectedRoute allowedRoles={['beneficiary', 'institution']}><MyRequests /></ProtectedRoute>} />
 
+        {/* Institution alias */}
+        <Route path="/institution" element={<Navigate to="/beneficiary" replace />} />
+
+        {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/resources" element={<ProtectedRoute allowedRoles={['admin']}><ManageResources /></ProtectedRoute>} />
         <Route path="/admin/requests" element={<ProtectedRoute allowedRoles={['admin']}><ManageRequests /></ProtectedRoute>} />
 
-        
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
