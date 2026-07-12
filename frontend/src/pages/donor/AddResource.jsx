@@ -31,6 +31,7 @@ const AddResource = () => {
   // Image states
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [uploadedUrls, setUploadedUrls] = useState([]);
 
   const handleChange = (e) =>
