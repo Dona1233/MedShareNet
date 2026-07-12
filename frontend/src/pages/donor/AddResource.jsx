@@ -31,7 +31,7 @@ const AddResource = () => {
   // Image states
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
-  //const [uploadedUrls, setUploadedUrls] = useState([]);
+  const [uploadedUrls, setUploadedUrls] = useState([]);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
