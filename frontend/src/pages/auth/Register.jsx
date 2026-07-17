@@ -181,7 +181,7 @@ const Register = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-gray-700">
-                    Registration Certificate (optional)
+                    Registration Certificate *
                   </label>
                   <input
                     type="file"

@@ -102,16 +102,6 @@ const Login = () => {
             </Link>
           </p>
         </Card>
-
-        {/* Demo credentials */}
-        <Card className="mt-4">
-          <p className="text-xs font-semibold text-gray-500 mb-2">DEMO CREDENTIALS</p>
-          <div className="flex flex-col gap-1 text-xs text-gray-600">
-            <p>🟢 Donor: rahul@test.com / Test@123</p>
-            <p>🔵 Beneficiary: priya@test.com / Test@123</p>
-            <p>🔴 Admin: admin@test.com / Test@123</p>
-          </div>
-        </Card>
       </div>
     </div>
   );
