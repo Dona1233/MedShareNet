@@ -221,14 +221,14 @@ const Register = () => {
               required
             />
             <Input
-              label="Phone (optional)"
+              label="Phone *"
               name="phone"
               value={form.phone}
               onChange={handleChange}
               placeholder="Your phone number"
             />
             <Input
-              label="Address (optional)"
+              label="Address *"
               name="address"
               value={form.address}
               onChange={handleChange}
